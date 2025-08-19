@@ -1,7 +1,6 @@
 import pygame, sys, math
 
 class Game:
-    # board = [(300, 300), (375, 343.30),(375, 256.70)]
     board = []
 
     def startGame(self):
@@ -10,6 +9,9 @@ class Game:
         WIDTH, HEIGHT = 800, 600
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
         self.clock = pygame.time.Clock()
+        self.cameraX, self.cameraY = 0, 0
+        self.dragging = False
+        self.mousePosition = (0, 0)
 
     def createBoard(self):
         startingX, startingY = 100, 300
@@ -43,9 +45,10 @@ class Game:
 
     def updateBoard(self):
         for tile in self.board:
-            if tile:
-                pygame.draw.polygon(self.screen, (255, 0, 0), self.hexagon((tile[0])))
-                pygame.draw.polygon(self.screen, (255, 255, 255), self.hexagon((tile[0])), 3)
+            pos = tile[0]
+            screen_pos = (pos[0] - self.cameraX, pos[1] - self.cameraY)
+            pygame.draw.polygon(self.screen, (255, 0, 0), self.hexagon(screen_pos))
+            pygame.draw.polygon(self.screen, (255, 255, 255), self.hexagon(screen_pos), 3)
 
      
 
@@ -73,6 +76,25 @@ class Game:
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit()
+
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    if event.button == 3:
+                        self.dragging = True
+                        self.mousePosition = event.pos 
+
+                elif event.type == pygame.MOUSEBUTTONUP:
+                    if event.button == 3:
+                        self.dragging = False
+
+                elif event.type == pygame.MOUSEMOTION:
+                    if self.dragging:
+                        mx, my = event.pos
+                        dx_move = mx - self.mousePosition[0]
+                        dy_move = my - self.mousePosition[1]
+                        self.cameraX -= dx_move 
+                        self.cameraY -= dy_move
+                        self.mousePosition = event.pos
+            
 
             self.screen.fill((0, 0, 0))
 
