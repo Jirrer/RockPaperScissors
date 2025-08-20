@@ -1,7 +1,7 @@
-import pygame, sys, math
+import pygame, sys, math, random
 
 class Game:
-    board = []
+    board = {}
 
     def startGame(self):
         pygame.init()
@@ -15,13 +15,13 @@ class Game:
 
     def createBoard(self):
         startingX, startingY = 100, 300
-        rowLength = 7
+        rowLength = 20
         
         for row in range(rowLength):
             x, y = startingX, startingY
 
             for i in range(rowLength):
-                self.board.append([[x, y], False])
+                self.board[x, y] = False
 
                 x += 75
                 y += math.sqrt(3) - (1.732 * 50) / 2
@@ -31,7 +31,7 @@ class Game:
             y += math.sqrt(3) + (1.732 * 50) / 2
 
             for i in range(rowLength- 1):
-                self.board.append([[x, y], False])
+                self.board[x, y] = False
 
                 x += 75
                 y += math.sqrt(3) + (1.732 * 50) / 2
@@ -45,12 +45,16 @@ class Game:
 
     def updateBoard(self):
         for tile in self.board:
-            pos = tile[0]
-            screen_pos = (pos[0] - self.cameraX, pos[1] - self.cameraY)
+            screen_pos = (tile[0] - self.cameraX, tile[1] - self.cameraY)
             pygame.draw.polygon(self.screen, (255, 0, 0), self.hexagon(screen_pos))
             pygame.draw.polygon(self.screen, (255, 255, 255), self.hexagon(screen_pos), 3)
 
-     
+    def removeRandomTile(self):
+        boardArray = list(self.board)
+
+        tileToRemove = boardArray[random.randint(0, len(boardArray) - 1)]
+
+        del self.board[tileToRemove]
 
     def hexagon(self, center):
         cx, cy = center
@@ -73,7 +77,7 @@ class Game:
 
         while True:
             for event in pygame.event.get():
-                if event.type == pygame.QUIT:
+                if event.type == pygame.QUIT or len(self.board) == 0:
                     pygame.quit()
                     sys.exit()
 
@@ -85,6 +89,8 @@ class Game:
                 elif event.type == pygame.MOUSEBUTTONUP:
                     if event.button == 3:
                         self.dragging = False
+                    elif event.button == 1:
+                        self.removeRandomTile()
 
                 elif event.type == pygame.MOUSEMOTION:
                     if self.dragging:
