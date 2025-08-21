@@ -1,9 +1,10 @@
 import pygame, sys, math, random, Player, NPC
 
 class Game:
-    board = {}
+    board = []
     NPCs = []
     player = Player.Player()
+    tilesToKeep = []
 
     def main(self):
         self.startGame()
@@ -32,8 +33,9 @@ class Game:
                         self.mousePosition = event.pos 
 
                     elif event.button == 1:
+                        self.userMove(event.pos)
+                        self.npcMove()
                         self.removeRandomTile()
-                        self.populateBoard()
 
                 elif event.type == pygame.MOUSEBUTTONUP:
                     if event.button == 3:
@@ -91,7 +93,7 @@ class Game:
             x, y = startingX, startingY
 
             for i in range(rowLength):
-                self.board[x, y] = False
+                self.board.append((x, y))
 
                 x += 75
                 y += math.sqrt(3) - (1.732 * 50) / 2
@@ -99,7 +101,7 @@ class Game:
             x, y = startingX + 75, startingY + math.sqrt(3) + (1.732 * 50) / 2
     
             for i in range(rowLength- 1):
-                self.board[x, y] = False
+                self.board.append((x, y))
 
                 x += 75
                 y += math.sqrt(3) + (1.732 * 50) / 2
@@ -108,21 +110,69 @@ class Game:
             rowLength -= 1
 
     def populateBoard(self):
-        boardArray = list(self.board)
+        self.tilesToKeep = []
+
+        boardArray = self.board.copy()
 
         for player in self.NPCs:
             index = random.randint(0, len(boardArray) - 1)
 
             player.cords = boardArray[index]
             boardArray.remove(boardArray[index])
+            
+            self.tilesToKeep.append(player.cords)
+
+    def userMove(self, userCords):
+        
+        pass
+
+    def npcMove(self):
+        for player in self.NPCs:
+            allowedMoves = self.findNeighbors(player.cords)
+       
+            print(allowedMoves)
+
+    def findNeighbors(self, tile, tolerance=2):
+        HEX_RADIUS = 50
+        H_SPACING = HEX_RADIUS * 1.5  # 75
+        V_SPACING = HEX_RADIUS * math.sqrt(3) / 2  # vertical half-spacing
+
+        neighbor_offsets = [
+            (+H_SPACING, 0),            # right
+            (-H_SPACING, 0),            # left
+            (+H_SPACING/2, -V_SPACING), # upper-right
+            (-H_SPACING/2, -V_SPACING), # upper-left
+            (+H_SPACING/2, +V_SPACING), # lower-right
+            (-H_SPACING/2, +V_SPACING)  # lower-left
+        ]
+
+        neighbors = []
+        x, y = tile
+
+        for dx, dy in neighbor_offsets:
+            nx, ny = x + dx, y + dy
+            # Check all board tiles for a match within tolerance
+            for bx, by in self.board:
+                if abs(nx - bx) <= tolerance and abs(ny - by) <= tolerance:
+                    neighbors.append((bx, by))
+                    break
+
+        return neighbors
+
+
+
 
 
     def removeRandomTile(self):
-        boardArray = list(self.board)
+        boardArray = self.board.copy()
+
+        for tile in self.tilesToKeep:
+            boardArray.remove(tile)
 
         tileToRemove = boardArray[random.randint(0, len(boardArray) - 1)]
 
-        del self.board[tileToRemove]
+        self.board.remove(tileToRemove)
+
 
     def updateBoard(self):
         for tile in self.board:
