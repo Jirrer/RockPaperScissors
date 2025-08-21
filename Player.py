@@ -1,5 +1,6 @@
 class Player:
-    def __init__(self, playerType):
-        self.playerType = playerType
-
+    def __init__(self):
+        pass
     
+    def playerImage(self):
+        return "graphics\\playerType.png"

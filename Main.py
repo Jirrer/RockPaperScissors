@@ -1,15 +1,28 @@
-import pygame, sys, math, random
+import pygame, sys, math, random, Player, NPC
 
 class Game:
     board = {}
+    NPCs = []
+    player = Player.Player()
 
     def main(self):
-        self.createBoard()
         self.startGame()
+        self.createPlayers()
+        self.createBoard()
+        self.populateBoard()
+
+        self.rockImage = pygame.image.load("graphics/Rock.png").convert_alpha()
+        self.rockImage = pygame.transform.scale(self.rockImage, (50, 50)) 
+
+        self.paperImage = pygame.image.load("graphics/Paper.png").convert_alpha()
+        self.paperImage = pygame.transform.scale(self.paperImage, (50, 50)) 
+
+        self.scissorsImage = pygame.image.load("graphics/Scissors.png").convert_alpha()
+        self.scissorsImage = pygame.transform.scale(self.scissorsImage, (50, 50)) 
 
         while True:
             for event in pygame.event.get():
-                if event.type == pygame.QUIT or len(self.board) == 0:
+                if (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE) or len(self.board) == 0:
                     pygame.quit()
                     sys.exit()
 
@@ -20,6 +33,7 @@ class Game:
 
                     elif event.button == 1:
                         self.removeRandomTile()
+                        self.populateBoard()
 
                 elif event.type == pygame.MOUSEBUTTONUP:
                     if event.button == 3:
@@ -34,13 +48,40 @@ class Game:
                         self.cameraY -= dy_move
                         self.mousePosition = event.pos
             
-            self.screen.fill((0, 0, 0))
+            self.screen.blit(self.background, (0, 0))
 
             self.updateBoard()
 
             pygame.display.flip()
 
             self.clock.tick(60)
+
+    def startGame(self):
+        pygame.init()
+
+        self.clock = pygame.time.Clock()
+        self.cameraX, self.cameraY = 0, 0
+        self.dragging = False
+        self.mousePosition = (0, 0)
+
+        self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+
+        WIDTH, HEIGHT = self.screen.get_size()
+        self.background = pygame.image.load("graphics\\skybackground.jpg")
+        self.background = pygame.transform.scale(self.background, (WIDTH, HEIGHT))
+
+    def createPlayers(self):
+        for x in range(3):
+            newNPC = NPC.NPC("Paper")
+            self.NPCs.append(newNPC)
+
+        for x in range(3):
+            newNPC = NPC.NPC("Rock")
+            self.NPCs.append(newNPC)
+
+        for x in range(3):
+            newNPC = NPC.NPC("Scissors")
+            self.NPCs.append(newNPC)
 
     def createBoard(self):
         startingX, startingY = 100, 300
@@ -66,15 +107,15 @@ class Game:
             startingX += 150
             rowLength -= 1
 
-    def startGame(self):
-        pygame.init()
+    def populateBoard(self):
+        boardArray = list(self.board)
 
-        WIDTH, HEIGHT = 800, 600
-        self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
-        self.clock = pygame.time.Clock()
-        self.cameraX, self.cameraY = 0, 0
-        self.dragging = False
-        self.mousePosition = (0, 0)
+        for player in self.NPCs:
+            index = random.randint(0, len(boardArray) - 1)
+
+            player.cords = boardArray[index]
+            boardArray.remove(boardArray[index])
+
 
     def removeRandomTile(self):
         boardArray = list(self.board)
@@ -86,8 +127,16 @@ class Game:
     def updateBoard(self):
         for tile in self.board:
             screen_pos = (tile[0] - self.cameraX, tile[1] - self.cameraY)
-            pygame.draw.polygon(self.screen, (255, 0, 0), self.hexagon(screen_pos))
+            pygame.draw.polygon(self.screen, (117, 0, 0), self.hexagon(screen_pos))
             pygame.draw.polygon(self.screen, (255, 255, 255), self.hexagon(screen_pos), 3)
+
+        for player in self.NPCs:
+            playerTile = player.cords
+            screen_pos = (playerTile[0] - self.cameraX, playerTile[1] - self.cameraY)
+
+            if player.playerType == "Rock": self.screen.blit(self.rockImage, (screen_pos[0] - 25, screen_pos[1] - 25))
+            elif player.playerType == "Paper": self.screen.blit(self.paperImage, (screen_pos[0] - 25, screen_pos[1] - 25))
+            elif player.playerType == "Scissors": self.screen.blit(self.scissorsImage, (screen_pos[0] - 25, screen_pos[1] - 25))
 
     def hexagon(self, center):
         cx, cy = center
