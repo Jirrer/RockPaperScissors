@@ -34,8 +34,11 @@ class Game:
 
                     elif event.button == 1:
                         self.userMove(event.pos)
-                        self.npcMove()
                         self.removeRandomTile()
+                        self.npcMove()
+                        self.checkOutcome()
+
+                        if self.checkGameStatus(): pygame.quit(); sys.exit()
 
                 elif event.type == pygame.MOUSEBUTTONUP:
                     if event.button == 3:
@@ -73,15 +76,15 @@ class Game:
         self.background = pygame.transform.scale(self.background, (WIDTH, HEIGHT))
 
     def createPlayers(self):
-        for x in range(3):
+        for x in range(7):
             newNPC = NPC.NPC("Paper")
             self.NPCs.append(newNPC)
 
-        for x in range(3):
+        for x in range(7):
             newNPC = NPC.NPC("Rock")
             self.NPCs.append(newNPC)
 
-        for x in range(3):
+        for x in range(7):
             newNPC = NPC.NPC("Scissors")
             self.NPCs.append(newNPC)
 
@@ -126,43 +129,6 @@ class Game:
         
         pass
 
-    def npcMove(self):
-        for player in self.NPCs:
-            allowedMoves = self.findNeighbors(player.cords)
-       
-            print(allowedMoves)
-
-    def findNeighbors(self, tile, tolerance=2):
-        HEX_RADIUS = 50
-        H_SPACING = HEX_RADIUS * 1.5  # 75
-        V_SPACING = HEX_RADIUS * math.sqrt(3) / 2  # vertical half-spacing
-
-        neighbor_offsets = [
-            (+H_SPACING, 0),            # right
-            (-H_SPACING, 0),            # left
-            (+H_SPACING/2, -V_SPACING), # upper-right
-            (-H_SPACING/2, -V_SPACING), # upper-left
-            (+H_SPACING/2, +V_SPACING), # lower-right
-            (-H_SPACING/2, +V_SPACING)  # lower-left
-        ]
-
-        neighbors = []
-        x, y = tile
-
-        for dx, dy in neighbor_offsets:
-            nx, ny = x + dx, y + dy
-            # Check all board tiles for a match within tolerance
-            for bx, by in self.board:
-                if abs(nx - bx) <= tolerance and abs(ny - by) <= tolerance:
-                    neighbors.append((bx, by))
-                    break
-
-        return neighbors
-
-
-
-
-
     def removeRandomTile(self):
         boardArray = self.board.copy()
 
@@ -173,6 +139,57 @@ class Game:
 
         self.board.remove(tileToRemove)
 
+    def npcMove(self):
+        for player in self.NPCs:
+            allowedMoves = self.findNeighbors(player.cords)
+
+            player.cords = allowedMoves[random.randint(0, len(allowedMoves) - 1)]
+
+    def findNeighbors(self, tile, max_neighbors=6):
+        x, y = tile
+        distances = []
+        for bx, by in self.board:
+            if (bx, by) != (x, y):
+                d = math.dist((x, y), (bx, by))
+                distances.append(((bx, by), d))
+        # Sort by distance and pick closest 6
+        distances.sort(key=lambda t: t[1])
+        return [pos for pos, _ in distances[:max_neighbors]]
+    
+    def checkOutcome(self):
+        to_remove = set()
+        seenTiles = {}
+
+        for player in self.NPCs:
+            if player.cords not in seenTiles:
+                seenTiles[player.cords] = [player]
+            else:
+                seenTiles[player.cords].append(player)
+
+        for tile, players in seenTiles.items():
+            if len(players) > 1:
+                for i in range(len(players)):
+                    for j in range(i + 1, len(players)):
+                        p1, p2 = players[i], players[j]
+                        if p1.playerType == p2.playerType:
+                            continue
+                        if (p1.playerType == "Rock" and p2.playerType == "Scissors") or \
+                        (p1.playerType == "Scissors" and p2.playerType == "Paper") or \
+                        (p1.playerType == "Paper" and p2.playerType == "Rock"):
+                            to_remove.add(p2)
+                        else:
+                            to_remove.add(p1)
+
+        self.NPCs = [npc for npc in self.NPCs if npc not in to_remove]
+
+    def checkGameStatus(self):
+        teamsAlive = set()
+
+        for player in self.NPCs:
+            if player.playerType not in teamsAlive: teamsAlive.add(player.playerType)
+
+        if len(teamsAlive) == 1: return True
+        else: return False
 
     def updateBoard(self):
         for tile in self.board:
