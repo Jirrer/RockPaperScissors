@@ -3,14 +3,16 @@ import pygame, sys, math, random, Player, NPC
 class Game:
     board = []
     NPCs = []
-    player = Player.Player()
+    player = Player.Player("Rock")
     tilesToKeep = []
+    playerAllowedMoves = set()
 
     def main(self):
         self.startGame()
         self.createPlayers()
         self.createBoard()
         self.populateBoard()
+        self.player.cords = self.board[0]
 
         self.rockImage = pygame.image.load("graphics/Rock.png").convert_alpha()
         self.rockImage = pygame.transform.scale(self.rockImage, (50, 50)) 
@@ -126,8 +128,8 @@ class Game:
             self.tilesToKeep.append(player.cords)
 
     def userMove(self, userCords):
-        
-        pass
+        self.playerAllowedMoves = set(self.findNeighbors(userCords))
+        self.player.cords = userCords
 
     def removeRandomTile(self):
         boardArray = self.board.copy()
@@ -193,9 +195,14 @@ class Game:
 
     def updateBoard(self):
         for tile in self.board:
-            screen_pos = (tile[0] - self.cameraX, tile[1] - self.cameraY)
-            pygame.draw.polygon(self.screen, (117, 0, 0), self.hexagon(screen_pos))
-            pygame.draw.polygon(self.screen, (255, 255, 255), self.hexagon(screen_pos), 3)
+            if tile in self.playerAllowedMoves:
+                screen_pos = (tile[0] - self.cameraX, tile[1] - self.cameraY)
+                pygame.draw.polygon(self.screen, (0, 102, 255), self.hexagon(screen_pos))
+                pygame.draw.polygon(self.screen, (255, 255, 255), self.hexagon(screen_pos), 3)
+            else:
+                screen_pos = (tile[0] - self.cameraX, tile[1] - self.cameraY)
+                pygame.draw.polygon(self.screen, (117, 0, 0), self.hexagon(screen_pos))
+                pygame.draw.polygon(self.screen, (255, 255, 255), self.hexagon(screen_pos), 3)
 
         for player in self.NPCs:
             playerTile = player.cords
@@ -204,6 +211,13 @@ class Game:
             if player.playerType == "Rock": self.screen.blit(self.rockImage, (screen_pos[0] - 25, screen_pos[1] - 25))
             elif player.playerType == "Paper": self.screen.blit(self.paperImage, (screen_pos[0] - 25, screen_pos[1] - 25))
             elif player.playerType == "Scissors": self.screen.blit(self.scissorsImage, (screen_pos[0] - 25, screen_pos[1] - 25))
+
+        playerTile = self.player.cords
+        screen_pos = (playerTile[0] - self.cameraX, playerTile[1] - self.cameraY)
+
+        if self.player.playerType == "Rock": self.screen.blit(self.rockImage, (screen_pos[0] - 25, screen_pos[1] - 25))
+        elif self.player.playerType == "Paper": self.screen.blit(self.paperImage, (screen_pos[0] - 25, screen_pos[1] - 25))
+        elif self.player.playerType == "Scissors": self.screen.blit(self.scissorsImage, (screen_pos[0] - 25, screen_pos[1] - 25))
 
     def hexagon(self, center):
         cx, cy = center
